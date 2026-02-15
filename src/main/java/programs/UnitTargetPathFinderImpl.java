@@ -11,93 +11,66 @@ public class UnitTargetPathFinderImpl implements UnitTargetPathFinder {
     private static final int WIDTH = 27;
     private static final int HEIGHT = 21;
     private static final int[][] DIRECTIONS = {
-            {0, 1},
-            {1, 0},
-            {0, -1},
-            {-1, 0}
+            {0, 1},   // вверх
+            {1, 0},   // вправо
+            {0, -1},  // вниз
+            {-1, 0}   // влево
     };
 
     @Override
     public List<Edge> getTargetPath(Unit attackUnit, Unit targetUnit, List<Unit> existingUnitList) {
 
         boolean[][] occupied = new boolean[WIDTH][HEIGHT];
-        int[][] distance = new int[WIDTH][HEIGHT];
+        boolean[][] visited = new boolean[WIDTH][HEIGHT];
         Edge[][] previous = new Edge[WIDTH][HEIGHT];
+        Queue<int[]> queue = new LinkedList<>();
 
-        if (
-                attackUnit.getxCoordinate() == targetUnit.getxCoordinate() &&
-                attackUnit.getyCoordinate() == targetUnit.getyCoordinate()
-        ) {
-            return List.of(new Edge(attackUnit.getxCoordinate(), attackUnit.getyCoordinate()));
-        }
+        int startX = attackUnit.getxCoordinate();
+        int startY = attackUnit.getyCoordinate();
+        int targetX = targetUnit.getxCoordinate();
+        int targetY = targetUnit.getyCoordinate();
+
+        queue.add(new int[]{startX, startY});
+        visited[startX][startY] = true;
 
         for (Unit unit : existingUnitList) {
-            if (
-                    unit.isAlive() &&
-                            unit != attackUnit &&
-                            unit != targetUnit
-            ) {
+            if (unit.isAlive() && unit != attackUnit && unit != targetUnit) {
                 occupied[unit.getxCoordinate()][unit.getyCoordinate()] = true;
             }
         }
 
-        for (int i = 0; i < WIDTH; i++) {
-            for (int j = 0; j < HEIGHT; j++) {
-                distance[i][j] = Integer.MAX_VALUE;
-            }
-        }
+        while (!queue.isEmpty()) {
+            int[] current = queue.poll();
+            int currentX = current[0];
+            int currentY = current[1];
 
-        PriorityQueue<Node> priorityQueue = new PriorityQueue<>(
-                Comparator.comparingInt(n -> n.distance)
-        );
-
-        int startX = attackUnit.getxCoordinate();
-        int startY = attackUnit.getyCoordinate();
-        distance[startX][startY] = 0;
-
-        priorityQueue.add(new Node(startX, startY, 0));
-
-        while (!priorityQueue.isEmpty()) {
-            Node current = priorityQueue.poll();
-
-            if (current.x == targetUnit.getxCoordinate() && current.y == targetUnit.getyCoordinate()) {
+            if (currentX == targetX && currentY == targetY) {
                 break;
             }
 
-            if (current.distance > distance[current.x][current.y]) {
-                continue;
-            }
-
             for (int[] dir : DIRECTIONS) {
-                int newX = current.x + dir[0];
-                int newY = current.y + dir[1];
+                int newX = currentX + dir[0];
+                int newY = currentY + dir[1];
 
                 if (newX < 0 || newX >= WIDTH || newY < 0 || newY >= HEIGHT) {
                     continue;
                 }
 
-                if (occupied[newX][newY]) {
-                    continue;
-                }
-
-                int newDistance = distance[current.x][current.y] + 1;
-
-                if (newDistance < distance[newX][newY]) {
-                    distance[newX][newY] = newDistance;
-                    previous[newX][newY] = new Edge(current.x, current.y);
-                    priorityQueue.add(new Node(newX, newY, newDistance));
+                if (!occupied[newX][newY] && !visited[newX][newY]) {
+                    visited[newX][newY] = true;
+                    previous[newX][newY] = new Edge(currentX, currentY);
+                    queue.add(new int[]{newX, newY});
                 }
             }
         }
 
-        return buildPath(previous, startX, startY, targetUnit.getxCoordinate(), targetUnit.getyCoordinate());
+        return buildPath(previous, startX, startY, targetX, targetY);
     }
 
     private List<Edge> buildPath(Edge[][] previous, int startX, int startY, int targetX, int targetY) {
-
         LinkedList<Edge> path = new LinkedList<>();
 
-        if (previous[targetX][targetY] == null && (startX != targetX || startY != targetY)) {
+        if (previous[targetX][targetY] == null) {
             return new ArrayList<>();
         }
 
@@ -115,17 +88,5 @@ public class UnitTargetPathFinderImpl implements UnitTargetPathFinder {
         path.addFirst(new Edge(startX, startY));
 
         return path;
-    }
-
-    private static class Node {
-        int x;
-        int y;
-        int distance;
-
-        Node(int x, int y, int distance) {
-            this.x = x;
-            this.y = y;
-            this.distance = distance;
-        }
     }
 }
