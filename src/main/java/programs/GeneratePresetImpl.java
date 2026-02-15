@@ -35,7 +35,7 @@ public class GeneratePresetImpl implements GeneratePreset {
             availablePositions.add(positions);
         }
 
-        while (remainingPoints > 0 && !unitList.isEmpty()) {
+        while (true) {
             boolean unitAdded = false;
 
             List<Integer> xOrder = Arrays.asList(0, 1, 2);
